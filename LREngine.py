@@ -3,77 +3,89 @@ from tensorflow import keras
 
 import numpy as np
 import matplotlib.pyplot as plt
+import os
+
+import MNIST_format_extractor as gze
 
 class LREngine:
-    def __init__(self):
-        # Load the train data from Keras
-        self.fashion_mnist = keras.datasets.fashion_mnist
-        (self.train_images, self.train_labels), (self.test_images, self.test_labels) = self.fashion_mnist.load_data()
+    model = None
 
-        # Stores the cloth names in a list to convert their index to a string
-        self.class_names = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Boot']
+    def train_model():
+        # Extract and load the train data from the EMNIST dataset
+        with tf.io.gfile.GFile(os.path.expanduser(
+            "~/.keras/datasets/EMNIST/emnist-byclass-train-images-idx3-ubyte.gz"), "rb") as f:
+            train_images = gze.extract_images(f)
 
-        # Shows the data of the train and test images
-        print("Size of train images (length, px, px): ", end = '')
-        print(self.train_images.shape)
-        print("Size of test images (length, px, px): ", end = '')
-        print(self.test_images.shape)
-        
-        # Initiates other variables
-        self.model = None
+        with tf.io.gfile.GFile(os.path.expanduser(
+            "~/.keras/datasets/EMNIST/emnist-byclass-train-labels-idx1-ubyte.gz"), "rb") as f:
+            train_labels = gze.extract_labels(f)
 
-    def prepareImages(self):
-        # Converts the images to grayscale
-        self.train_images = self.train_images / 255.0
-        self.test_images = self.test_images / 255.0
+        # Dictionary converts the label id to the ASCII id
+        class_names = []
 
-    def showImages(self, n):
-        # Shows the first n train images along with their labels
-        plt.figure(figsize=(10,10))
-        for i in range(n):
-            plt.subplot(5,5,i+1)
-            plt.xticks([])
-            plt.yticks([])
-            plt.grid(False)
-            plt.imshow(self.train_images[i], cmap = plt.cm.binary)
-            plt.xlabel(self.class_names[self.train_labels[i]])
-        plt.show()
+        # Display the details of the train data
+        print("Train Images (amount, width, height): ", end = '')
+        print(train_images.shape)
+        print("Train Labels (amount): ", end = '')
+        print(len(train_labels))
 
-    def buildModel(self):
         # Sets up the layers of the model
-        self.model = keras.Sequential([
+        LREngine.model = keras.Sequential([
             keras.layers.Flatten(input_shape = (28, 28)),
             keras.layers.Dense(128, activation = 'relu'),
-            keras.layers.Dense(10, activation = 'softmax')
+            keras.layers.Dense(62, activation = 'softmax')
         ])
 
         # Compiles the model with a few settings before training
-        self.model.compile(
+        LREngine.model.compile(
                 optimizer = 'adam',
                 loss = 'sparse_categorical_crossentropy',
                 metrics = ['accuracy']
             )
 
         # Trains the model
-        self.model.fit(self.train_images, self.train_labels, epochs = 10)
+        LREngine.model.fit(train_images, train_labels, epochs = 10)
 
-    def getPredictions(self, images):
+    def test_model():
+        # Extract and load the test data from the EMNIST dataset
+        with tf.io.gfile.GFile(os.path.expanduser(
+            "~/.keras/datasets/EMNIST/emnist-byclass-test-images-idx3-ubyte.gz"), "rb") as f:
+            test_images = gze.extract_images(f)
+
+        with tf.io.gfile.GFile(os.path.expanduser(
+            "~/.keras/datasets/EMNIST/emnist-byclass-test-labels-idx1-ubyte.gz"), "rb") as f:
+            test_labels = gze.extract_labels(f)
+        
+        # Gets and prints the predictions from the model
+        prediction_indexes = LREngine.getPredictions(test_images)
+        for i in range(len(prediction_indexes)):
+            print("Prediction: " + str(prediction_indexes[i]) + "\t\tActual: " + str(test_labels[i]))
+
+    def showImages(images, labels, n=1):
+        # Shows the first n images along with their labels
+        plt.figure(figsize=(10,10))
+        for i in range(n):
+            plt.subplot(5,5,i+1)
+            plt.xticks([])
+            plt.yticks([])
+            plt.grid(False)
+            plt.imshow(images[i], cmap = plt.cm.binary)
+            plt.xlabel(class_names[labels[i]])
+        plt.show()
+
+    def getPredictions(images):
         # Asks the model to make predictions on an list of images
-        predictions = self.model.predict(images)
+        predictions = LREngine.model.predict(images)
 
         # Loops through all returned predictions
-        # Gets the max value of each image prediction and puts that index into the ids list
-        prediction_ids = []
+        # Gets the max value (most confident) of each image prediction 
+        # and puts that index into the indexes list
+        prediction_class_indexes = []
         for i in range(len(predictions)):
-            prediction_ids.append(np.argmax(predictions[i]))
-        return prediction_ids;
+            prediction_class_indexes.append(np.argmax(predictions[i]))
+        return prediction_class_indexes;
 
 
-engine = LREngine()
-engine.prepareImages()
-# engine.showImages(20)
-engine.buildModel()
+LREngine.train_model()
+LREngine.test_model()
 
-ids = engine.getPredictions(engine.test_images)
-for i in range(len(ids)):
-    print("Prediction: " + str(engine.class_names[ids[i]]) + " --  Actual: " + str(engine.class_names[engine.test_labels[i]]))
