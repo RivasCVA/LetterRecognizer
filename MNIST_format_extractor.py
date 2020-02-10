@@ -21,10 +21,10 @@ def extract_images(file):
         data = np.frombuffer(buffer, dtype=np.uint8)
         data = data.reshape(numImages, rows, columns, 1)
         assert data.shape[3] == 1
-        data = data.reshape(data.shape[0], data.shape[1], data.shape[2])    #(numImages, rows, columns)
+        data = data.reshape(data.shape[0], data.shape[1], data.shape[2])    # (numImages, rows, columns)
         data = data.astype(np.float32)
         data = np.multiply(data, 1.0 / 255.0)
-        data = np.swapaxes(data,1,2)    #Swaps pixel axes to make the image right-up
+        data = np.swapaxes(data,1,2)    # Swaps pixel axes to make the image right-up
         return data
 
 # file parameter to be in the format of TensorFlow's GFile
