@@ -1,10 +1,7 @@
 
 from tkinter import *
 from tkinter import ttk
-"""
-Base Code pulled from @abhishek305 on Github!
-Link can be found @ https://github.com/abhishek305/ProgrammingKnowlegde-Tkinter-Series/blob/master/10th/Slider%20and%20color%20choos.py
-"""
+
 
 class main:
     def __init__(self, master):
@@ -31,7 +28,7 @@ class main:
     def clear(self):
        self.c.delete(ALL)
        
-    def drawWidgets(self):
+    def drawWidgets(self): #setting, need save/engine documentation
         self.c = Canvas(self.master, width=148, height=148)
         self.c.pack(fill=BOTH, expand=True)
 
@@ -48,7 +45,7 @@ class main:
 
 if __name__ == '__main__':
     root = Tk()
-    root.resizable(False, False)
+    root.resizable(False, False) #this doesn't allot resize
     main(root)
     root.title('Drawing Pad')
     root.mainloop()
